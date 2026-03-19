@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text2Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+            color: #e0e0e0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 6px;
+            color: #b0b0b0;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e0e0e0;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #a78bfa;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        select option {
+            background: #1e1e2f;
+            color: #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            color: #fff;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 0.85em;
+            padding: 8px 16px;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .api-key-section {
+            text-align: center;
+        }
+
+        .api-key-section p {
+            margin-bottom: 20px;
+            color: #b0b0b0;
+            line-height: 1.6;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .api-key-display {
+            font-size: 0.85em;
+            color: #888;
+        }
+
+        .prompt-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .prompt-toggle label {
+            margin-bottom: 0;
+        }
+
+        .prompt-toggle button {
+            font-size: 0.8em;
+            padding: 4px 12px;
+        }
+
+        #result-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .result-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .result-images img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            color: #b0b0b0;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+
+        .error-text {
+            color: #f87171;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .count-row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .count-row .form-group {
+            flex: 1;
+        }
+
+        .count-row .form-group:first-child {
+            flex: 0 0 100px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #e0e0e0;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            border-color: #a78bfa;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Text2Image Generator</h1>
+
+    <!-- API Key Input Screen -->
+    <div id="apikey-screen" class="api-key-section">
+        <p>Picsart Creative APIを使用するにはAPI KEYが必要です。<br>API KEYを入力してください。</p>
+        <div class="form-group">
+            <input type="password" id="apikey-input" placeholder="API KEYを入力...">
+        </div>
+        <button class="btn btn-primary" onclick="saveApiKey()">保存して開始</button>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="main-screen" class="hidden">
+        <div class="header-row">
+            <span class="api-key-display" id="apikey-display"></span>
+            <button class="btn btn-danger" onclick="resetApiKey()">API KEY をリセット</button>
+        </div>
+
+        <div class="form-group">
+            <div class="prompt-toggle">
+                <label for="prompt-input">プロンプト</label>
+                <button class="btn btn-secondary" id="prompt-toggle-btn" onclick="togglePromptEdit()">プロンプト変更</button>
+            </div>
+            <textarea id="prompt-input" readonly>Create a single cute fantasy hybrid animal by fusing exactly TWO animals.The creature must be adorable and heartwarming,with baby-animal proportions:slightly oversized head, large round eyes, short limbs, soft expression.At the same time, the hybrid MUST clearly displaydistinct, iconic anatomical features from each source animal.Explicitly include:One clearly recognizable PRIMARY feature from Animal A  (such as an elephant trunk, rabbit ears, cat ears, duck bill,   deer antlers, turtle shell, lion mane, or kirin-style horn and long neck)One clearly recognizable PRIMARY feature from Animal BThese features must be obvious at first glance,not subtle or abstract.The rest of the body can be softly blended,but the signature features must remain prominent and readable.Photorealistic fantasy CGI style:realistic fur and skin textures, soft natural lighting,shallow depth of field, pastel tones.ONE creature only.No realism-focused wildlife documentary style.No horror or aggression.The iconic features must be immediately identifiable,even without explanation.</textarea>
+        </div>
+
+        <div class="count-row">
+            <div class="form-group">
+                <label for="count-input">枚数</label>
+                <input type="number" id="count-input" min="1" max="10" value="1">
+            </div>
+            <div class="form-group">
+                <label for="model-select">AIモデル</label>
+                <select id="model-select">
+                    <option value="urn:air:picsart:model:picsart:aiavatar@v3.6.11">picsart:aiavatar@v3.6.11</option>
+                    <option value="urn:air:picsart:model:picsart:aiavatar@v3.6.16">picsart:aiavatar@v3.6.16</option>
+                    <option value="urn:air:picsart:model:picsart:aiavatar@v3.6.17">picsart:aiavatar@v3.6.17</option>
+                    <option value="urn:air:fluxai:model:fluxai:flux-2-flex@1">fluxai:flux-2-flex@1</option>
+                    <option value="urn:air:fluxai:model:fluxai:flux-2-pro@1">fluxai:flux-2-pro@1</option>
+                    <option value="urn:air:fluxai:model:fluxai:flux-2-max@1">fluxai:flux-2-max@1</option>
+                    <option value="urn:air:google:model:google:gemini-2.5-flash-image@1" selected>google:gemini-2.5-flash-image@1</option>
+                    <option value="urn:air:google:model:google:gemini-3-pro-image-preview@1">google:gemini-3-pro-image-preview@1</option>
+                    <option value="urn:air:ideogram:model:ideogram:ideogram@3">ideogram:ideogram@3</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="generate-btn" onclick="generateImage()">画像を生成する</button>
+
+        <!-- Result Section -->
+        <div id="result-section" class="hidden">
+            <div id="loading-area">
+                <div class="spinner"></div>
+                <p class="status-text" id="status-text">画像を生成中...</p>
+            </div>
+            <div id="result-area" class="hidden">
+                <div class="result-images" id="result-images"></div>
+                <button class="btn btn-primary" onclick="retryGenerate()">もう一度試す</button>
+            </div>
+            <div id="error-area" class="hidden">
+                <p class="error-text" id="error-text"></p>
+                <br>
+                <button class="btn btn-primary" onclick="retryGenerate()">もう一度試す</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'https://genai-api.picsart.io/v1';
+    const STORAGE_KEY = 'picsart_api_key';
+    const POLL_INTERVAL = 3000;
+    const MAX_POLLS = 60;
+
+    function init() {
+        const apiKey = localStorage.getItem(STORAGE_KEY);
+        if (apiKey) {
+            showMainScreen(apiKey);
+        } else {
+            showApiKeyScreen();
+        }
+    }
+
+    function showApiKeyScreen() {
+        document.getElementById('apikey-screen').classList.remove('hidden');
+        document.getElementById('main-screen').classList.add('hidden');
+    }
+
+    function showMainScreen(apiKey) {
+        document.getElementById('apikey-screen').classList.add('hidden');
+        document.getElementById('main-screen').classList.remove('hidden');
+        const masked = apiKey.substring(0, 6) + '...' + apiKey.substring(apiKey.length - 4);
+        document.getElementById('apikey-display').textContent = 'API KEY: ' + masked;
+    }
+
+    function saveApiKey() {
+        const input = document.getElementById('apikey-input');
+        const key = input.value.trim();
+        if (!key) {
+            alert('API KEYを入力してください。');
+            return;
+        }
+        localStorage.setItem(STORAGE_KEY, key);
+        showMainScreen(key);
+    }
+
+    function resetApiKey() {
+        if (confirm('API KEYをリセットしますか？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('apikey-input').value = '';
+            showApiKeyScreen();
+        }
+    }
+
+    let promptEditable = false;
+
+    function togglePromptEdit() {
+        const textarea = document.getElementById('prompt-input');
+        const btn = document.getElementById('prompt-toggle-btn');
+        promptEditable = !promptEditable;
+        if (promptEditable) {
+            textarea.removeAttribute('readonly');
+            textarea.style.borderColor = '#a78bfa';
+            btn.textContent = '編集を確定';
+            textarea.focus();
+        } else {
+            textarea.setAttribute('readonly', true);
+            textarea.style.borderColor = '';
+            btn.textContent = 'プロンプト変更';
+        }
+    }
+
+    async function generateImage() {
+        const apiKey = localStorage.getItem(STORAGE_KEY);
+        if (!apiKey) {
+            showApiKeyScreen();
+            return;
+        }
+
+        const prompt = document.getElementById('prompt-input').value.trim();
+        if (!prompt) {
+            alert('プロンプトを入力してください。');
+            return;
+        }
+
+        const model = document.getElementById('model-select').value;
+        const count = parseInt(document.getElementById('count-input').value) || 1;
+
+        // Show loading
+        const resultSection = document.getElementById('result-section');
+        const loadingArea = document.getElementById('loading-area');
+        const resultArea = document.getElementById('result-area');
+        const errorArea = document.getElementById('error-area');
+
+        resultSection.classList.remove('hidden');
+        loadingArea.classList.remove('hidden');
+        resultArea.classList.add('hidden');
+        errorArea.classList.add('hidden');
+        document.getElementById('status-text').textContent = '画像を生成中...';
+        document.getElementById('generate-btn').disabled = true;
+
+        try {
+            // Step 1: POST to create the inference
+            const response = await fetch(`${API_BASE}/text2image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Picsart-API-Key': apiKey
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    model: model,
+                    count: count,
+                    width: 1024,
+                    height: 1024
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || errData.message || `APIエラー (${response.status})`);
+            }
+
+            const data = await response.json();
+
+            // Check if images are already in the response
+            if (data.data && data.data.length > 0 && data.data[0].url) {
+                displayImages(data.data);
+                return;
+            }
+
+            // Step 2: Poll for results using inference_id
+            const inferenceId = data.inference_id || data.id;
+            if (!inferenceId) {
+                // Maybe images are directly available
+                if (data.images) {
+                    displayImages(data.images);
+                    return;
+                }
+                throw new Error('レスポンスからinference_idを取得できませんでした。');
+            }
+
+            document.getElementById('status-text').textContent = '画像を生成中... (ポーリング中)';
+
+            let pollCount = 0;
+            const poll = async () => {
+                if (pollCount >= MAX_POLLS) {
+                    throw new Error('タイムアウト: 画像生成に時間がかかりすぎています。');
+                }
+                pollCount++;
+
+                const pollResponse = await fetch(`${API_BASE}/text2image/inferences/${inferenceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Picsart-API-Key': apiKey
+                    }
+                });
+
+                if (pollResponse.status === 200) {
+                    const result = await pollResponse.json();
+                    const images = result.data || result.images || [];
+                    if (images.length > 0) {
+                        displayImages(images);
+                        return;
+                    }
+                    // Check status field
+                    if (result.status === 'FINISHED' || result.status === 'finished') {
+                        displayImages(result.data || result.images || []);
+                        return;
+                    }
+                    if (result.status === 'FAILED' || result.status === 'failed') {
+                        throw new Error('画像生成に失敗しました。');
+                    }
+                }
+
+                if (pollResponse.status === 202) {
+                    document.getElementById('status-text').textContent = `画像を生成中... (${pollCount}/${MAX_POLLS})`;
+                    await new Promise(r => setTimeout(r, POLL_INTERVAL));
+                    return poll();
+                }
+
+                if (!pollResponse.ok) {
+                    const errData = await pollResponse.json().catch(() => ({}));
+                    throw new Error(errData.detail || errData.message || `ポーリングエラー (${pollResponse.status})`);
+                }
+
+                // Still processing
+                await new Promise(r => setTimeout(r, POLL_INTERVAL));
+                return poll();
+            };
+
+            await poll();
+
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            document.getElementById('generate-btn').disabled = false;
+        }
+    }
+
+    function displayImages(images) {
+        const container = document.getElementById('result-images');
+        container.innerHTML = '';
+
+        images.forEach(img => {
+            const url = img.url || img;
+            const imgEl = document.createElement('img');
+            imgEl.src = url;
+            imgEl.alt = '生成された画像';
+            imgEl.loading = 'lazy';
+            container.appendChild(imgEl);
+        });
+
+        document.getElementById('loading-area').classList.add('hidden');
+        document.getElementById('result-area').classList.remove('hidden');
+        document.getElementById('error-area').classList.add('hidden');
+    }
+
+    function showError(message) {
+        document.getElementById('error-text').textContent = 'エラー: ' + message;
+        document.getElementById('loading-area').classList.add('hidden');
+        document.getElementById('result-area').classList.add('hidden');
+        document.getElementById('error-area').classList.remove('hidden');
+    }
+
+    function retryGenerate() {
+        document.getElementById('result-section').classList.add('hidden');
+        document.getElementById('result-images').innerHTML = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
